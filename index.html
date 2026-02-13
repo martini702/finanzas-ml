@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Finanzas ML</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { font-family: Arial; margin: 20px; background:#f4f6f9; }
+h1 { text-align:center; }
+input, select, button { padding:8px; margin:5px 0; width:100%; }
+button { background:#007bff; color:white; border:none; cursor:pointer; }
+.card { background:white; padding:15px; border-radius:8px; margin-bottom:10px; }
+.total { font-size:18px; font-weight:bold; }
+.ingreso { color:green; }
+.gasto { color:red; }
+</style>
+</head>
+<body>
+
+<h1>Finanzas ML</h1>
+
+<div class="card">
+<select id="tipo">
+<option value="ingreso">Ingreso</option>
+<option value="gasto">Gasto</option>
+</select>
+
+<input type="text" id="descripcion" placeholder="Descripción">
+
+<input type="number" id="monto" placeholder="Monto">
+
+<button onclick="agregar()">Agregar</button>
+</div>
+
+<div class="card total">
+Ingresos: $<span id="totalIngresos">0</span><br>
+Gastos: $<span id="totalGastos">0</span><br>
+Resultado: $<span id="resultado">0</span>
+</div>
+
+<div id="lista"></div>
+
+<script>
+let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
+
+function guardar() {
+localStorage.setItem("movimientos", JSON.stringify(movimientos));
+}
+
+function agregar() {
+let tipo = document.getElementById("tipo").value;
+let descripcion = document.getElementById("descripcion").value;
+let monto = parseFloat(document.getElementById("monto").value);
+
+if (!descripcion || !monto) return alert("Completa los datos");
+
+movimientos.push({ tipo, descripcion, monto });
+guardar();
+mostrar();
+document.getElementById("descripcion").value = "";
+document.getElementById("monto").value = "";
+}
+
+function eliminar(index) {
+movimientos.splice(index, 1);
+guardar();
+mostrar();
+}
+
+function mostrar() {
+let lista = document.getElementById("lista");
+lista.innerHTML = "";
+
+let totalIngresos = 0;
+let totalGastos = 0;
+
+movimientos.forEach((m, i) => {
+if (m.tipo === "ingreso") totalIngresos += m.monto;
+else totalGastos += m.monto;
+
+lista.innerHTML += `
+<div class="card ${m.tipo}">
+${m.descripcion} - $${m.monto}
+<button onclick="eliminar(${i})">Eliminar</button>
+</div>
+`;
+});
+
+document.getElementById("totalIngresos").innerText = totalIngresos;
+document.getElementById("totalGastos").innerText = totalGastos;
+document.getElementById("resultado").innerText = totalIngresos - totalGastos;
+}
+
+mostrar();
+</script>
+
+</body>
+</html>

@@ -4,47 +4,130 @@
 <meta charset="UTF-8">
 <title>Finanzas ML</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-body { font-family: Arial; margin: 20px; background:#f4f6f9; }
-h1 { text-align:center; }
-input, select, button { padding:8px; margin:5px 0; width:100%; }
-button { background:#007bff; color:white; border:none; cursor:pointer; }
-.card { background:white; padding:15px; border-radius:8px; margin-bottom:10px; }
-.total { font-size:18px; font-weight:bold; }
-.ingreso { color:green; }
-.gasto { color:red; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0;
+    background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+
+.container {
+    max-width: 420px;
+    margin: auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.card {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    padding: 15px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    font-size: 14px;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 15px;
+    border: none;
+    background: #0a84ff;
+    color: white;
+    font-weight: 600;
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+.total {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.ingreso { color: #32d74b; }
+.gasto { color: #ff453a; }
+
+.movimiento {
+    padding: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.delete-btn {
+    background: #ff3b30;
+    margin-top: 5px;
+}
 </style>
 </head>
 <body>
 
+<div class="container">
+
 <h1>Finanzas ML</h1>
 
 <div class="card">
-<label>Mes</label>
+
 <select id="mesSeleccionado" onchange="mostrar()">
-<option value="Enero">Enero</option>
-<option value="Febrero">Febrero</option>
-<option value="Marzo">Marzo</option>
-<option value="Abril">Abril</option>
-<option value="Mayo">Mayo</option>
-<option value="Junio">Junio</option>
-<option value="Julio">Julio</option>
-<option value="Agosto">Agosto</option>
-<option value="Septiembre">Septiembre</option>
-<option value="Octubre">Octubre</option>
-<option value="Noviembre">Noviembre</option>
-<option value="Diciembre">Diciembre</option>
+<option>Enero</option>
+<option>Febrero</option>
+<option>Marzo</option>
+<option>Abril</option>
+<option>Mayo</option>
+<option>Junio</option>
+<option>Julio</option>
+<option>Agosto</option>
+<option>Septiembre</option>
+<option>Octubre</option>
+<option>Noviembre</option>
+<option>Diciembre</option>
+</select>
+
+<input type="number" id="sueldo" placeholder="Sueldo del mes">
+<button onclick="guardarSueldo()">Guardar sueldo</button>
+
+<select id="categoria">
+<option>Padre</option>
+<option>Bencina</option>
+<option>Netflix</option>
+<option>Tag</option>
+<option>Internet</option>
+<option>Celular</option>
+<option>Comida</option>
+<option>Crédito</option>
+<option>Otros</option>
 </select>
 
 <select id="tipo">
-<option value="ingreso">Ingreso</option>
 <option value="gasto">Gasto</option>
+<option value="ingreso">Ingreso</option>
 </select>
 
 <input type="text" id="descripcion" placeholder="Descripción">
 <input type="number" id="monto" placeholder="Monto">
 
-<button onclick="agregar()">Agregar</button>
+<button onclick="agregar()">Agregar movimiento</button>
+
 </div>
 
 <div class="card total">
@@ -53,68 +136,116 @@ Gastos: $<span id="totalGastos">0</span><br>
 Resultado: $<span id="resultado">0</span>
 </div>
 
-<div id="lista"></div>
+<div class="card">
+<canvas id="grafico"></canvas>
+</div>
+
+<div class="card" id="lista"></div>
+
+</div>
 
 <script>
-let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
 
-function guardar() {
+let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
+let sueldos = JSON.parse(localStorage.getItem("sueldos")) || {};
+let chart;
+
+function guardarDatos() {
 localStorage.setItem("movimientos", JSON.stringify(movimientos));
+localStorage.setItem("sueldos", JSON.stringify(sueldos));
+}
+
+function guardarSueldo() {
+let mes = document.getElementById("mesSeleccionado").value;
+let sueldo = parseFloat(document.getElementById("sueldo").value) || 0;
+sueldos[mes] = sueldo;
+guardarDatos();
+mostrar();
 }
 
 function agregar() {
 let mes = document.getElementById("mesSeleccionado").value;
+let categoria = document.getElementById("categoria").value;
 let tipo = document.getElementById("tipo").value;
 let descripcion = document.getElementById("descripcion").value;
 let monto = parseFloat(document.getElementById("monto").value);
 
-if (!descripcion || !monto) return alert("Completa los datos");
+if (!descripcion || !monto) {
+alert("Completa los datos");
+return;
+}
 
-movimientos.push({ mes, tipo, descripcion, monto });
-guardar();
+movimientos.push({ mes, categoria, tipo, descripcion, monto });
+guardarDatos();
 mostrar();
+
 document.getElementById("descripcion").value = "";
 document.getElementById("monto").value = "";
 }
 
 function eliminar(index) {
 movimientos.splice(index, 1);
-guardar();
+guardarDatos();
 mostrar();
 }
 
 function mostrar() {
+let mes = document.getElementById("mesSeleccionado").value;
 let lista = document.getElementById("lista");
 lista.innerHTML = "";
 
-let mesActual = document.getElementById("mesSeleccionado").value;
+let ingresos = sueldos[mes] || 0;
+let gastos = 0;
 
-let totalIngresos = 0;
-let totalGastos = 0;
+movimientos.forEach((mov, index) => {
+if (mov.mes === mes) {
 
-movimientos.forEach((m, i) => {
-if (m.mes === mesActual) {
-
-if (m.tipo === "ingreso") totalIngresos += m.monto;
-else totalGastos += m.monto;
+if (mov.tipo === "ingreso") ingresos += mov.monto;
+else gastos += mov.monto;
 
 lista.innerHTML += `
-<div class="card ${m.tipo}">
-${m.descripcion} - $${m.monto}
-<button onclick="eliminar(${i})">Eliminar</button>
+<div class="movimiento">
+<strong>${mov.descripcion}</strong> - ${mov.categoria}<br>
+<span class="${mov.tipo}">
+${mov.tipo === "ingreso" ? "+" : "-"}$${mov.monto}
+</span>
+<button class="delete-btn" onclick="eliminar(${index})">Eliminar</button>
 </div>
 `;
 }
 });
 
-document.getElementById("totalIngresos").innerText = totalIngresos;
-document.getElementById("totalGastos").innerText = totalGastos;
-document.getElementById("resultado").innerText = totalIngresos - totalGastos;
+document.getElementById("totalIngresos").innerText = ingresos;
+document.getElementById("totalGastos").innerText = gastos;
+document.getElementById("resultado").innerText = ingresos - gastos;
+
+actualizarGrafico(ingresos, gastos);
+}
+
+function actualizarGrafico(ingresos, gastos) {
+if (chart) chart.destroy();
+let ctx = document.getElementById("grafico").getContext("2d");
+
+chart = new Chart(ctx, {
+type: "doughnut",
+data: {
+labels: ["Ingresos", "Gastos"],
+datasets: [{
+data: [ingresos, gastos],
+backgroundColor: ["#32d74b", "#ff453a"]
+}]
+},
+options: {
+plugins: {
+legend: { labels: { color: "white" } }
+}
+}
+});
 }
 
 mostrar();
+
 </script>
 
 </body>
 </html>
-

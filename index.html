@@ -66,6 +66,7 @@ button:active {
 
 .delete-btn {
     background: #ff3b30;
+    margin-top: 5px;
 }
 
 .total {
@@ -105,7 +106,7 @@ button:active {
 <option>Diciembre</option>
 </select>
 
-<input type="number" id="sueldo" placeholder="Sueldo del mes">
+<input type="text" id="sueldo" placeholder="Sueldo del mes">
 <button onclick="guardarSueldo()">Guardar sueldo</button>
 
 <select id="categoria">
@@ -126,7 +127,7 @@ button:active {
 </select>
 
 <input type="text" id="descripcion" placeholder="Descripción">
-<input type="number" id="monto" placeholder="Monto">
+<input type="text" id="monto" placeholder="Monto">
 
 <button onclick="agregar()">Agregar movimiento</button>
 
@@ -152,6 +153,16 @@ let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
 let sueldos = JSON.parse(localStorage.getItem("sueldos")) || {};
 let chart;
 
+/* FORMATEO CHILENO */
+function formatear(numero) {
+    return numero.toLocaleString("es-CL");
+}
+
+/* LIMPIAR PUNTOS PARA GUARDAR */
+function limpiarNumero(valor) {
+    return parseInt(valor.replace(/\./g, "")) || 0;
+}
+
 function guardarDatos() {
 localStorage.setItem("movimientos", JSON.stringify(movimientos));
 localStorage.setItem("sueldos", JSON.stringify(sueldos));
@@ -159,7 +170,9 @@ localStorage.setItem("sueldos", JSON.stringify(sueldos));
 
 function guardarSueldo() {
 let mes = document.getElementById("mesSeleccionado").value;
-let sueldo = parseFloat(document.getElementById("sueldo").value) || 0;
+let sueldoInput = document.getElementById("sueldo").value;
+let sueldo = limpiarNumero(sueldoInput);
+
 sueldos[mes] = sueldo;
 guardarDatos();
 mostrar();
@@ -170,7 +183,8 @@ let mes = document.getElementById("mesSeleccionado").value;
 let categoria = document.getElementById("categoria").value;
 let tipo = document.getElementById("tipo").value;
 let descripcion = document.getElementById("descripcion").value;
-let monto = parseFloat(document.getElementById("monto").value);
+let montoInput = document.getElementById("monto").value;
+let monto = limpiarNumero(montoInput);
 
 if (!descripcion || !monto) {
 alert("Completa los datos");
@@ -209,7 +223,7 @@ lista.innerHTML += `
 <div class="movimiento">
 <strong>${mov.descripcion}</strong> - ${mov.categoria}<br>
 <span class="${mov.tipo}">
-${mov.tipo === "ingreso" ? "+" : "-"}$${mov.monto}
+${mov.tipo === "ingreso" ? "+" : "-"}$${formatear(mov.monto)}
 </span>
 <button class="delete-btn" onclick="eliminar(${index})">Eliminar</button>
 </div>
@@ -217,9 +231,9 @@ ${mov.tipo === "ingreso" ? "+" : "-"}$${mov.monto}
 }
 });
 
-document.getElementById("totalIngresos").innerText = ingresos;
-document.getElementById("totalGastos").innerText = gastos;
-document.getElementById("resultado").innerText = ingresos - gastos;
+document.getElementById("totalIngresos").innerText = formatear(ingresos);
+document.getElementById("totalGastos").innerText = formatear(gastos);
+document.getElementById("resultado").innerText = formatear(ingresos - gastos);
 
 actualizarGrafico(ingresos, gastos);
 }
@@ -246,12 +260,27 @@ legend: { labels: { color: "white" } }
 });
 }
 
-mostrar();
+/* ULTRA PRO – FORMATEO EN VIVO */
+document.getElementById("monto").addEventListener("input", function(e) {
+let valor = e.target.value.replace(/\./g, "");
+if (!isNaN(valor) && valor !== "") {
+e.target.value = parseInt(valor).toLocaleString("es-CL");
+}
+});
 
-/* REGISTRO SERVICE WORKER */
+document.getElementById("sueldo").addEventListener("input", function(e) {
+let valor = e.target.value.replace(/\./g, "");
+if (!isNaN(valor) && valor !== "") {
+e.target.value = parseInt(valor).toLocaleString("es-CL");
+}
+});
+
+/* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
 navigator.serviceWorker.register("service-worker.js");
 }
+
+mostrar();
 
 </script>
 

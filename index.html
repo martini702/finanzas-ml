@@ -20,13 +20,28 @@ button { background:#007bff; color:white; border:none; cursor:pointer; }
 <h1>Finanzas ML</h1>
 
 <div class="card">
+<label>Mes</label>
+<select id="mesSeleccionado" onchange="mostrar()">
+<option value="Enero">Enero</option>
+<option value="Febrero">Febrero</option>
+<option value="Marzo">Marzo</option>
+<option value="Abril">Abril</option>
+<option value="Mayo">Mayo</option>
+<option value="Junio">Junio</option>
+<option value="Julio">Julio</option>
+<option value="Agosto">Agosto</option>
+<option value="Septiembre">Septiembre</option>
+<option value="Octubre">Octubre</option>
+<option value="Noviembre">Noviembre</option>
+<option value="Diciembre">Diciembre</option>
+</select>
+
 <select id="tipo">
 <option value="ingreso">Ingreso</option>
 <option value="gasto">Gasto</option>
 </select>
 
 <input type="text" id="descripcion" placeholder="Descripción">
-
 <input type="number" id="monto" placeholder="Monto">
 
 <button onclick="agregar()">Agregar</button>
@@ -48,13 +63,14 @@ localStorage.setItem("movimientos", JSON.stringify(movimientos));
 }
 
 function agregar() {
+let mes = document.getElementById("mesSeleccionado").value;
 let tipo = document.getElementById("tipo").value;
 let descripcion = document.getElementById("descripcion").value;
 let monto = parseFloat(document.getElementById("monto").value);
 
 if (!descripcion || !monto) return alert("Completa los datos");
 
-movimientos.push({ tipo, descripcion, monto });
+movimientos.push({ mes, tipo, descripcion, monto });
 guardar();
 mostrar();
 document.getElementById("descripcion").value = "";
@@ -71,10 +87,14 @@ function mostrar() {
 let lista = document.getElementById("lista");
 lista.innerHTML = "";
 
+let mesActual = document.getElementById("mesSeleccionado").value;
+
 let totalIngresos = 0;
 let totalGastos = 0;
 
 movimientos.forEach((m, i) => {
+if (m.mes === mesActual) {
+
 if (m.tipo === "ingreso") totalIngresos += m.monto;
 else totalGastos += m.monto;
 
@@ -84,6 +104,7 @@ ${m.descripcion} - $${m.monto}
 <button onclick="eliminar(${i})">Eliminar</button>
 </div>
 `;
+}
 });
 
 document.getElementById("totalIngresos").innerText = totalIngresos;
@@ -96,3 +117,4 @@ mostrar();
 
 </body>
 </html>
+

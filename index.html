@@ -5,6 +5,10 @@
 <title>Finanzas ML</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f2027">
+<link rel="apple-touch-icon" href="icon.png">
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -24,7 +28,6 @@ body {
 h1 {
     text-align: center;
     font-weight: 600;
-    margin-bottom: 20px;
 }
 
 .card {
@@ -61,6 +64,10 @@ button:active {
     transform: scale(0.97);
 }
 
+.delete-btn {
+    background: #ff3b30;
+}
+
 .total {
     font-size: 18px;
     font-weight: 500;
@@ -72,11 +79,6 @@ button:active {
 .movimiento {
     padding: 10px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
-.delete-btn {
-    background: #ff3b30;
-    margin-top: 5px;
 }
 </style>
 </head>
@@ -224,6 +226,7 @@ actualizarGrafico(ingresos, gastos);
 
 function actualizarGrafico(ingresos, gastos) {
 if (chart) chart.destroy();
+
 let ctx = document.getElementById("grafico").getContext("2d");
 
 chart = new Chart(ctx, {
@@ -244,6 +247,11 @@ legend: { labels: { color: "white" } }
 }
 
 mostrar();
+
+/* REGISTRO SERVICE WORKER */
+if ("serviceWorker" in navigator) {
+navigator.serviceWorker.register("service-worker.js");
+}
 
 </script>
 

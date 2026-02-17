@@ -1,288 +1,301 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Finanzas ML</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f2027">
-<link rel="apple-touch-icon" href="icon.png">
-
+<title>Finanzas App 4.0</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    margin: 0;
-    background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
-    color: white;
+
+body{
+margin:0;
+background:#f2f2f2;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+display:flex;
+justify-content:center;
 }
 
-.container {
-    max-width: 420px;
-    margin: auto;
-    padding: 20px;
+.app{
+width:390px;
+min-height:100vh;
+background:white;
+padding:15px;
+box-shadow:0 0 20px rgba(0,0,0,0.1);
 }
 
-h1 {
-    text-align: center;
-    font-weight: 600;
+h2{
+text-align:center;
+margin:10px 0 20px 0;
 }
 
-.card {
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(20px);
-    padding: 15px;
-    border-radius: 20px;
-    margin-bottom: 15px;
+.card{
+background:#fafafa;
+padding:12px;
+border-radius:12px;
+margin-bottom:15px;
+box-shadow:0 2px 6px rgba(0,0,0,0.05);
 }
 
-input, select {
-    width: 100%;
-    padding: 10px;
-    margin: 6px 0;
-    border-radius: 12px;
-    border: none;
-    outline: none;
-    font-size: 14px;
+button{
+background:#111;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:8px;
+margin-top:5px;
+cursor:pointer;
 }
 
-button {
-    width: 100%;
-    padding: 12px;
-    border-radius: 15px;
-    border: none;
-    background: #0a84ff;
-    color: white;
-    font-weight: 600;
-    margin-top: 8px;
-    cursor: pointer;
+button.secondary{
+background:#e0e0e0;
+color:black;
 }
 
-button:active {
-    transform: scale(0.97);
+input, select{
+width:100%;
+padding:8px;
+margin-top:5px;
+border-radius:8px;
+border:1px solid #ddd;
 }
 
-.delete-btn {
-    background: #ff3b30;
-    margin-top: 5px;
+.year-nav{
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
 
-.total {
-    font-size: 18px;
-    font-weight: 500;
+.year-nav button{
+background:none;
+color:black;
+font-size:20px;
 }
 
-.ingreso { color: #32d74b; }
-.gasto { color: #ff453a; }
-
-.movimiento {
-    padding: 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+table{
+width:100%;
+margin-top:10px;
+font-size:14px;
 }
+
+td{
+padding:5px 0;
+}
+
+.resumen p{
+margin:5px 0;
+}
+
+.total{
+font-weight:bold;
+font-size:16px;
+}
+
+canvas{
+margin-top:10px;
+}
+
 </style>
 </head>
 <body>
 
-<div class="container">
+<div class="app">
 
-<h1>Finanzas ML</h1>
+<h2>Mis Finanzas</h2>
 
-<div class="card">
-
-<select id="mesSeleccionado" onchange="mostrar()">
-<option>Enero</option>
-<option>Febrero</option>
-<option>Marzo</option>
-<option>Abril</option>
-<option>Mayo</option>
-<option>Junio</option>
-<option>Julio</option>
-<option>Agosto</option>
-<option>Septiembre</option>
-<option>Octubre</option>
-<option>Noviembre</option>
-<option>Diciembre</option>
-</select>
-
-<input type="text" id="sueldo" placeholder="Sueldo del mes">
-<button onclick="guardarSueldo()">Guardar sueldo</button>
-
-<select id="categoria">
-<option>Padre</option>
-<option>Bencina</option>
-<option>Netflix</option>
-<option>Tag</option>
-<option>Internet</option>
-<option>Celular</option>
-<option>Comida</option>
-<option>Crédito</option>
-<option>Otros</option>
-</select>
-
-<select id="tipo">
-<option value="gasto">Gasto</option>
-<option value="ingreso">Ingreso</option>
-</select>
-
-<input type="text" id="descripcion" placeholder="Descripción">
-<input type="text" id="monto" placeholder="Monto">
-
-<button onclick="agregar()">Agregar movimiento</button>
-
-</div>
-
-<div class="card total">
-Ingresos: $<span id="totalIngresos">0</span><br>
-Gastos: $<span id="totalGastos">0</span><br>
-Resultado: $<span id="resultado">0</span>
+<div class="card year-nav">
+<button onclick="cambiarAnio(-1)">◀</button>
+<strong id="anioActual"></strong>
+<button onclick="cambiarAnio(1)">▶</button>
 </div>
 
 <div class="card">
-<canvas id="grafico"></canvas>
+<select id="mesSelect" onchange="render()"></select>
 </div>
 
-<div class="card" id="lista"></div>
+<div class="card">
+<h4>Sueldo</h4>
+<input id="sueldoInput" placeholder="Ingrese sueldo">
+<button onclick="guardarSueldo()">Guardar</button>
+<button class="secondary" onclick="eliminarSueldo()">Eliminar</button>
+</div>
+
+<div class="card">
+<h4>Ahorro</h4>
+<input id="ahorroInput" placeholder="Ingrese ahorro">
+<button onclick="guardarAhorro()">Guardar</button>
+</div>
+
+<div class="card">
+<h4>Agregar Gasto</h4>
+<input id="descInput" placeholder="Descripción">
+<input id="montoInput" placeholder="Monto cuota">
+<input id="cuotasInput" placeholder="Meses cuotas">
+<button onclick="agregarGasto()">Agregar</button>
+<button onclick="agregarCuotas()">En cuotas</button>
+<button class="secondary" onclick="aplicarATodos()">Aplicar a todos</button>
+</div>
+
+<div class="card">
+<h4>Gastos del mes</h4>
+<table id="tablaGastos"></table>
+</div>
+
+<div class="card resumen">
+<p>Total Gastos: <span id="totalGastos"></span></p>
+<p>Ahorro: <span id="totalAhorro"></span></p>
+<p class="total">Disponible: <span id="disponible"></span></p>
+</div>
+
+<div class="card">
+<canvas id="graficoAhorro"></canvas>
+</div>
+
+<div class="card">
+<h4>Resumen Anual</h4>
+<p>Ingresos: <span id="ingresosAnual"></span></p>
+<p>Gastos: <span id="gastosAnual"></span></p>
+<p>Ahorro: <span id="ahorroAnual"></span></p>
+<p class="total">Balance: <span id="balanceAnual"></span></p>
+</div>
 
 </div>
 
 <script>
+const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+let anio=new Date().getFullYear();
+let datos=JSON.parse(localStorage.getItem("finanzas"))||{};
 
-let movimientos = JSON.parse(localStorage.getItem("movimientos")) || [];
-let sueldos = JSON.parse(localStorage.getItem("sueldos")) || {};
-let chart;
+function guardarStorage(){localStorage.setItem("finanzas",JSON.stringify(datos));}
+function formatoCL(v){return "$ "+Number(v||0).toLocaleString("es-CL");}
 
-/* FORMATEO CHILENO */
-function formatear(numero) {
-    return numero.toLocaleString("es-CL");
+function inicializarAnio(a){
+if(!datos[a]){
+datos[a]={};
+for(let i=0;i<12;i++){datos[a][i]={sueldo:0,ahorro:0,gastos:[]};}
+}
 }
 
-/* LIMPIAR PUNTOS PARA GUARDAR */
-function limpiarNumero(valor) {
-    return parseInt(valor.replace(/\./g, "")) || 0;
+function cambiarAnio(d){anio+=d;inicializarAnio(anio);render();}
+function getMes(){return Number(document.getElementById("mesSelect").value);}
+
+function guardarSueldo(){let m=getMes();datos[anio][m].sueldo=Number(sueldoInput.value.replace(/\./g,""));guardarStorage();render();}
+function eliminarSueldo(){let m=getMes();datos[anio][m].sueldo=0;guardarStorage();render();}
+function guardarAhorro(){let m=getMes();datos[anio][m].ahorro=Number(ahorroInput.value.replace(/\./g,""));guardarStorage();render();}
+
+function agregarGasto(){
+let m=getMes();
+let desc=descInput.value;
+let monto=Number(montoInput.value.replace(/\./g,""));
+if(!desc||!monto)return;
+datos[anio][m].gastos.push({id:Date.now(),desc,monto});
+guardarStorage();render();
 }
 
-function guardarDatos() {
-localStorage.setItem("movimientos", JSON.stringify(movimientos));
-localStorage.setItem("sueldos", JSON.stringify(sueldos));
+function aplicarATodos(){
+if(!confirm("¿Aplicar hasta diciembre?"))return;
+let mActual=getMes();
+let desc=descInput.value;
+let monto=Number(montoInput.value.replace(/\./g,""));
+if(!desc||!monto)return;
+for(let m=mActual;m<12;m++){
+datos[anio][m].gastos.push({id:Date.now()+m,desc,monto});
+}
+guardarStorage();render();
 }
 
-function guardarSueldo() {
-let mes = document.getElementById("mesSeleccionado").value;
-let sueldoInput = document.getElementById("sueldo").value;
-let sueldo = limpiarNumero(sueldoInput);
+function agregarCuotas(){
+let mInicial=getMes();
+let desc=descInput.value;
+let monto=Number(montoInput.value.replace(/\./g,""));
+let cuotas=Number(cuotasInput.value);
+if(!desc||!monto||!cuotas)return;
 
-sueldos[mes] = sueldo;
-guardarDatos();
-mostrar();
+let aTemp=anio,mTemp=mInicial;
+for(let i=0;i<cuotas;i++){
+inicializarAnio(aTemp);
+datos[aTemp][mTemp].gastos.push({id:Date.now()+i,desc,monto});
+mTemp++;
+if(mTemp>11){mTemp=0;aTemp++;}
+}
+guardarStorage();render();
 }
 
-function agregar() {
-let mes = document.getElementById("mesSeleccionado").value;
-let categoria = document.getElementById("categoria").value;
-let tipo = document.getElementById("tipo").value;
-let descripcion = document.getElementById("descripcion").value;
-let montoInput = document.getElementById("monto").value;
-let monto = limpiarNumero(montoInput);
-
-if (!descripcion || !monto) {
-alert("Completa los datos");
-return;
+function eliminarGasto(m,id){
+datos[anio][m].gastos=datos[anio][m].gastos.filter(g=>g.id!==id);
+guardarStorage();render();
 }
 
-movimientos.push({ mes, categoria, tipo, descripcion, monto });
-guardarDatos();
-mostrar();
+function render(){
+inicializarAnio(anio);
+anioActual.innerText=anio;
+let m=getMes();
+let d=datos[anio][m];
 
-document.getElementById("descripcion").value = "";
-document.getElementById("monto").value = "";
-}
+sueldoInput.value=d.sueldo||"";
+ahorroInput.value=d.ahorro||"";
 
-function eliminar(index) {
-movimientos.splice(index, 1);
-guardarDatos();
-mostrar();
-}
-
-function mostrar() {
-let mes = document.getElementById("mesSeleccionado").value;
-let lista = document.getElementById("lista");
-lista.innerHTML = "";
-
-let ingresos = sueldos[mes] || 0;
-let gastos = 0;
-
-movimientos.forEach((mov, index) => {
-if (mov.mes === mes) {
-
-if (mov.tipo === "ingreso") ingresos += mov.monto;
-else gastos += mov.monto;
-
-lista.innerHTML += `
-<div class="movimiento">
-<strong>${mov.descripcion}</strong> - ${mov.categoria}<br>
-<span class="${mov.tipo}">
-${mov.tipo === "ingreso" ? "+" : "-"}$${formatear(mov.monto)}
-</span>
-<button class="delete-btn" onclick="eliminar(${index})">Eliminar</button>
-</div>
-`;
-}
+let total=0;
+tablaGastos.innerHTML="";
+d.gastos.forEach(g=>{
+total+=g.monto;
+tablaGastos.innerHTML+=`
+<tr>
+<td>${g.desc} - ${formatoCL(g.monto)}</td>
+<td><button onclick="eliminarGasto(${m},${g.id})">✕</button></td>
+</tr>`;
 });
 
-document.getElementById("totalIngresos").innerText = formatear(ingresos);
-document.getElementById("totalGastos").innerText = formatear(gastos);
-document.getElementById("resultado").innerText = formatear(ingresos - gastos);
+let disp=(d.sueldo||0)-total-(d.ahorro||0);
+totalGastos.innerText=formatoCL(total);
+totalAhorro.innerText=formatoCL(d.ahorro);
+disponible.innerText=formatoCL(disp);
 
-actualizarGrafico(ingresos, gastos);
+actualizarGrafico();
+actualizarResumenAnual();
 }
 
-function actualizarGrafico(ingresos, gastos) {
-if (chart) chart.destroy();
-
-let ctx = document.getElementById("grafico").getContext("2d");
-
-chart = new Chart(ctx, {
-type: "doughnut",
-data: {
-labels: ["Ingresos", "Gastos"],
-datasets: [{
-data: [ingresos, gastos],
-backgroundColor: ["#32d74b", "#ff453a"]
-}]
-},
-options: {
-plugins: {
-legend: { labels: { color: "white" } }
-}
-}
-});
-}
-
-/* ULTRA PRO – FORMATEO EN VIVO */
-document.getElementById("monto").addEventListener("input", function(e) {
-let valor = e.target.value.replace(/\./g, "");
-if (!isNaN(valor) && valor !== "") {
-e.target.value = parseInt(valor).toLocaleString("es-CL");
-}
+let ctx=document.getElementById("graficoAhorro").getContext("2d");
+let grafico=new Chart(ctx,{
+type:"bar",
+data:{labels:meses,datasets:[
+{label:"Ahorro Mensual",data:Array(12).fill(0)},
+{label:"Ahorro Acumulado",data:Array(12).fill(0),type:"line"}
+]}
 });
 
-document.getElementById("sueldo").addEventListener("input", function(e) {
-let valor = e.target.value.replace(/\./g, "");
-if (!isNaN(valor) && valor !== "") {
-e.target.value = parseInt(valor).toLocaleString("es-CL");
+function actualizarGrafico(){
+let ahorroMensual=meses.map((_,i)=>datos[anio][i]?.ahorro||0);
+let acum=[],s=0;
+for(let i=0;i<12;i++){s+=ahorroMensual[i];acum.push(s);}
+grafico.data.datasets[0].data=ahorroMensual;
+grafico.data.datasets[1].data=acum;
+grafico.update();
 }
+
+function actualizarResumenAnual(){
+let ingresos=0,gastos=0,ahorro=0;
+for(let i=0;i<12;i++){
+ingresos+=datos[anio][i]?.sueldo||0;
+ahorro+=datos[anio][i]?.ahorro||0;
+datos[anio][i]?.gastos.forEach(g=>gastos+=g.monto);
+}
+let balance=ingresos-gastos-ahorro;
+ingresosAnual.innerText=formatoCL(ingresos);
+gastosAnual.innerText=formatoCL(gastos);
+ahorroAnual.innerText=formatoCL(ahorro);
+balanceAnual.innerText=formatoCL(balance);
+}
+
+function iniciar(){
+meses.forEach((m,i)=>{
+let opt=document.createElement("option");
+opt.value=i;opt.text=m;mesSelect.appendChild(opt);
 });
-
-/* SERVICE WORKER */
-if ("serviceWorker" in navigator) {
-navigator.serviceWorker.register("service-worker.js");
+mesSelect.value=new Date().getMonth();
+inicializarAnio(anio);
+render();
 }
-
-mostrar();
-
+iniciar();
 </script>
-
 </body>
 </html>

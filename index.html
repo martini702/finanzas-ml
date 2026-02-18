@@ -2,15 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Finanzas App 4.0</title>
+<title>Finanzas App 4.1</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
 
+<style>
 body{
 margin:0;
 background:#f2f2f2;
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
 display:flex;
 justify-content:center;
 transition:0.3s;
@@ -22,7 +22,6 @@ min-height:100vh;
 background:white;
 padding:15px;
 box-shadow:0 0 20px rgba(0,0,0,0.1);
-transition:0.3s;
 }
 
 .card{
@@ -31,7 +30,6 @@ padding:12px;
 border-radius:12px;
 margin-bottom:15px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
-transition:0.3s;
 }
 
 button{
@@ -55,12 +53,7 @@ padding:8px;
 margin-top:5px;
 border-radius:8px;
 border:1px solid #ddd;
-background:white;
-color:black;
-transition:0.3s;
 }
-
-/* 🌙 MODO OSCURO */
 
 body.dark{
 background:#121212;
@@ -93,20 +86,19 @@ body.dark button.secondary{
 background:#666;
 color:white;
 }
-
 </style>
 </head>
 <body>
 
 <div class="app">
 
-<div style="text-align:right; margin-bottom:10px;">
-  <button id="toggleDark">🌙</button>
+<div style="text-align:right;margin-bottom:10px;">
+<button id="toggleDark">🌙</button>
 </div>
 
 <h2>Mis Finanzas</h2>
 
-<div class="card year-nav">
+<div class="card">
 <button onclick="cambiarAnio(-1)">◀</button>
 <strong id="anioActual"></strong>
 <button onclick="cambiarAnio(1)">▶</button>
@@ -144,22 +136,21 @@ color:white;
 <table id="tablaGastos"></table>
 </div>
 
-<div class="card resumen">
+<div class="card">
 <p>Total Gastos: <span id="totalGastos"></span></p>
 <p>Ahorro: <span id="totalAhorro"></span></p>
 <p class="total">Disponible: <span id="disponible"></span></p>
 </div>
 
 <div class="card">
-<canvas id="graficoAhorro"></canvas>
+<h3>Meta de Ahorro</h3>
+<input type="number" id="metaMonto" placeholder="Monto meta">
+<button onclick="guardarMeta()">Guardar Meta</button>
+<p>Progreso: <span id="metaProgreso">0%</span></p>
 </div>
 
 <div class="card">
-<h4>Resumen Anual</h4>
-<p>Ingresos: <span id="ingresosAnual"></span></p>
-<p>Gastos: <span id="gastosAnual"></span></p>
-<p>Ahorro: <span id="ahorroAnual"></span></p>
-<p class="total">Balance: <span id="balanceAnual"></span></p>
+<canvas id="graficoAhorro"></canvas>
 </div>
 
 </div>
@@ -168,18 +159,12 @@ color:white;
 const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let anio=new Date().getFullYear();
 let datos=JSON.parse(localStorage.getItem("finanzas"))||{};
+let meta=localStorage.getItem("meta")?parseFloat(localStorage.getItem("meta")):0;
+
+const formatoMoneda=new Intl.NumberFormat("es-CL",{style:"currency",currency:"CLP",minimumFractionDigits:0});
+function formatoCL(v){return formatoMoneda.format(Number(v||0));}
 
 function guardarStorage(){localStorage.setItem("finanzas",JSON.stringify(datos));}
-const formatoMoneda = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  minimumFractionDigits: 0
-});
-
-function formatoCL(v){
-  return formatoMoneda.format(Number(v || 0));
-}
-
 
 function inicializarAnio(a){
 if(!datos[a]){
@@ -191,24 +176,23 @@ for(let i=0;i<12;i++){datos[a][i]={sueldo:0,ahorro:0,gastos:[]};}
 function cambiarAnio(d){anio+=d;inicializarAnio(anio);render();}
 function getMes(){return Number(document.getElementById("mesSelect").value);}
 
-function guardarSueldo(){let m=getMes();datos[anio][m].sueldo=Number(sueldoInput.value.replace(/\./g,""));guardarStorage();render();}
+function guardarSueldo(){let m=getMes();datos[anio][m].sueldo=Number(document.getElementById("sueldoInput").value.replace(/\D/g,""));guardarStorage();render();}
 function eliminarSueldo(){let m=getMes();datos[anio][m].sueldo=0;guardarStorage();render();}
-function guardarAhorro(){let m=getMes();datos[anio][m].ahorro=Number(ahorroInput.value.replace(/\./g,""));guardarStorage();render();}
+function guardarAhorro(){let m=getMes();datos[anio][m].ahorro=Number(document.getElementById("ahorroInput").value.replace(/\D/g,""));guardarStorage();render();}
 
 function agregarGasto(){
 let m=getMes();
-let desc=descInput.value;
-let monto=Number(montoInput.value.replace(/\./g,""));
+let desc=document.getElementById("descInput").value;
+let monto=Number(document.getElementById("montoInput").value.replace(/\D/g,""));
 if(!desc||!monto)return;
 datos[anio][m].gastos.push({id:Date.now(),desc,monto});
 guardarStorage();render();
 }
 
 function aplicarATodos(){
-if(!confirm("¿Aplicar hasta diciembre?"))return;
 let mActual=getMes();
-let desc=descInput.value;
-let monto=Number(montoInput.value.replace(/\./g,""));
+let desc=document.getElementById("descInput").value;
+let monto=Number(document.getElementById("montoInput").value.replace(/\D/g,""));
 if(!desc||!monto)return;
 for(let m=mActual;m<12;m++){
 datos[anio][m].gastos.push({id:Date.now()+m,desc,monto});
@@ -218,9 +202,9 @@ guardarStorage();render();
 
 function agregarCuotas(){
 let mInicial=getMes();
-let desc=descInput.value;
-let monto=Number(montoInput.value.replace(/\./g,""));
-let cuotas=Number(cuotasInput.value);
+let desc=document.getElementById("descInput").value;
+let monto=Number(document.getElementById("montoInput").value.replace(/\D/g,""));
+let cuotas=Number(document.getElementById("cuotasInput").value);
 if(!desc||!monto||!cuotas)return;
 
 let aTemp=anio,mTemp=mInicial;
@@ -238,103 +222,58 @@ datos[anio][m].gastos=datos[anio][m].gastos.filter(g=>g.id!==id);
 guardarStorage();render();
 }
 
-function activarModoOscuro(){
-  document.body.classList.add("dark");
-  localStorage.setItem("modo","dark");
-  document.getElementById("toggleDark").innerText="☀️";
+function guardarMeta(){
+meta=parseFloat(document.getElementById("metaMonto").value)||0;
+localStorage.setItem("meta",meta);
+render();
 }
 
-function desactivarModoOscuro(){
-  document.body.classList.remove("dark");
-  localStorage.setItem("modo","light");
-  document.getElementById("toggleDark").innerText="🌙";
+function actualizarMeta(disponible){
+if(meta>0){
+let porcentaje=Math.min((disponible/meta)*100,100);
+document.getElementById("metaProgreso").innerText=porcentaje.toFixed(1)+"%";
+}else{
+document.getElementById("metaProgreso").innerText="0%";
 }
-
-document.getElementById("toggleDark").addEventListener("click",()=>{
-  if(document.body.classList.contains("dark")){
-    desactivarModoOscuro();
-  }else{
-    activarModoOscuro();
-  }
-});
-
+}
 
 function render(){
 inicializarAnio(anio);
-anioActual.innerText=anio;
+document.getElementById("anioActual").innerText=anio;
 let m=getMes();
 let d=datos[anio][m];
 
-sueldoInput.value=d.sueldo||"";
-ahorroInput.value=d.ahorro||"";
+document.getElementById("sueldoInput").value=d.sueldo||"";
+document.getElementById("ahorroInput").value=d.ahorro||"";
 
 let total=0;
-tablaGastos.innerHTML="";
+let tabla=document.getElementById("tablaGastos");
+tabla.innerHTML="";
 d.gastos.forEach(g=>{
 total+=g.monto;
-tablaGastos.innerHTML+=`
-<tr>
+tabla.innerHTML+=`<tr>
 <td>${g.desc} - ${formatoCL(g.monto)}</td>
 <td><button onclick="eliminarGasto(${m},${g.id})">✕</button></td>
 </tr>`;
 });
 
 let disp=(d.sueldo||0)-total-(d.ahorro||0);
-totalGastos.innerText=formatoCL(total);
-totalAhorro.innerText=formatoCL(d.ahorro);
-disponible.innerText = formatoCL(disp);
 
-if(disp > 0){
-  disponible.style.color = "green";
-}else if(disp < 0){
-  disponible.style.color = "red";
-}else{
-  disponible.style.color = "black";
-}
+document.getElementById("totalGastos").innerText=formatoCL(total);
+document.getElementById("totalAhorro").innerText=formatoCL(d.ahorro);
+document.getElementById("disponible").innerText=formatoCL(disp);
 
-
+actualizarMeta(disp);
 actualizarGrafico();
-actualizarResumenAnual();
 }
 
 let ctx=document.getElementById("graficoAhorro").getContext("2d");
-let grafico = new Chart(ctx,{
+let grafico=new Chart(ctx,{
 type:"bar",
-data:{
-  labels:meses,
-  datasets:[
-    {
-      label:"Ahorro Mensual",
-      data:Array(12).fill(0)
-    },
-    {
-      label:"Ahorro Acumulado",
-      data:Array(12).fill(0),
-      type:"line"
-    }
-  ]
-},
-options:{
-  responsive:true,
-  plugins:{
-    tooltip:{
-      callbacks:{
-        label:function(context){
-          return context.dataset.label + ": " + formatoCL(context.raw);
-        }
-      }
-    }
-  },
-  scales:{
-    y:{
-      ticks:{
-        callback:function(value){
-          return formatoCL(value);
-        }
-      }
-    }
-  }
-}
+data:{labels:meses,datasets:[
+{label:"Ahorro Mensual",data:Array(12).fill(0)},
+{label:"Ahorro Acumulado",data:Array(12).fill(0),type:"line"}
+]}
 });
 
 function actualizarGrafico(){
@@ -346,55 +285,25 @@ grafico.data.datasets[1].data=acum;
 grafico.update();
 }
 
-function actualizarResumenAnual(){
-let ingresos=0,gastos=0,ahorro=0;
-for(let i=0;i<12;i++){
-ingresos+=datos[anio][i]?.sueldo||0;
-ahorro+=datos[anio][i]?.ahorro||0;
-datos[anio][i]?.gastos.forEach(g=>gastos+=g.monto);
-}
-let balance=ingresos-gastos-ahorro;
-ingresosAnual.innerText=formatoCL(ingresos);
-gastosAnual.innerText=formatoCL(gastos);
-ahorroAnual.innerText=formatoCL(ahorro);
-balanceAnual.innerText=formatoCL(balance);
-}
-
 function iniciar(){
 meses.forEach((m,i)=>{
 let opt=document.createElement("option");
-opt.value=i;opt.text=m;mesSelect.appendChild(opt);
+opt.value=i;opt.text=m;
+document.getElementById("mesSelect").appendChild(opt);
 });
-mesSelect.value=new Date().getMonth();
+document.getElementById("mesSelect").value=new Date().getMonth();
 inicializarAnio(anio);
 render();
 }
 
-function limpiarNumero(valor){
-  return Number(valor.replace(/\D/g,"")) || 0;
-}
+document.getElementById("toggleDark").addEventListener("click",()=>{
+document.body.classList.toggle("dark");
+localStorage.setItem("modo",document.body.classList.contains("dark")?"dark":"light");
+});
 
-function formatearInput(input){
-  input.addEventListener("blur", ()=>{
-    let numero = limpiarNumero(input.value);
-    input.value = numero ? formatoCL(numero) : "";
-  });
-
-  input.addEventListener("focus", ()=>{
-    input.value = limpiarNumero(input.value) || "";
-  });
-}
+if(localStorage.getItem("modo")==="dark"){document.body.classList.add("dark");}
 
 iniciar();
-formatearInput(sueldoInput);
-formatearInput(ahorroInput);
-formatearInput(montoInput);
-
-if(localStorage.getItem("modo")==="dark"){
-  activarModoOscuro();
-}
-
-
 </script>
 </body>
 </html>

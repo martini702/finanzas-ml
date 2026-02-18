@@ -166,7 +166,16 @@ let anio=new Date().getFullYear();
 let datos=JSON.parse(localStorage.getItem("finanzas"))||{};
 
 function guardarStorage(){localStorage.setItem("finanzas",JSON.stringify(datos));}
-function formatoCL(v){return "$ "+Number(v||0).toLocaleString("es-CL");}
+const formatoMoneda = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  minimumFractionDigits: 0
+});
+
+function formatoCL(v){
+  return formatoMoneda.format(Number(v || 0));
+}
+
 
 function inicializarAnio(a){
 if(!datos[a]){
@@ -295,7 +304,27 @@ mesSelect.value=new Date().getMonth();
 inicializarAnio(anio);
 render();
 }
+
+function limpiarNumero(valor){
+  return Number(valor.replace(/\D/g,"")) || 0;
+}
+
+function formatearInput(input){
+  input.addEventListener("blur", ()=>{
+    let numero = limpiarNumero(input.value);
+    input.value = numero ? formatoCL(numero) : "";
+  });
+
+  input.addEventListener("focus", ()=>{
+    input.value = limpiarNumero(input.value) || "";
+  });
+}
+
 iniciar();
+formatearInput(sueldoInput);
+formatearInput(ahorroInput);
+formatearInput(montoInput);
+
 </script>
 </body>
 </html>

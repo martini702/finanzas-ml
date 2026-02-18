@@ -13,6 +13,7 @@ background:#f2f2f2;
 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 display:flex;
 justify-content:center;
+transition:0.3s;
 }
 
 .app{
@@ -21,11 +22,7 @@ min-height:100vh;
 background:white;
 padding:15px;
 box-shadow:0 0 20px rgba(0,0,0,0.1);
-}
-
-h2{
-text-align:center;
-margin:10px 0 20px 0;
+transition:0.3s;
 }
 
 .card{
@@ -34,6 +31,7 @@ padding:12px;
 border-radius:12px;
 margin-bottom:15px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
+transition:0.3s;
 }
 
 button{
@@ -57,41 +55,43 @@ padding:8px;
 margin-top:5px;
 border-radius:8px;
 border:1px solid #ddd;
-}
-
-.year-nav{
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.year-nav button{
-background:none;
+background:white;
 color:black;
-font-size:20px;
+transition:0.3s;
 }
 
-table{
-width:100%;
-margin-top:10px;
-font-size:14px;
+/* 🌙 MODO OSCURO */
+
+body.dark{
+background:#121212;
+color:white;
 }
 
-td{
-padding:5px 0;
+body.dark .app{
+background:#1e1e1e;
+box-shadow:none;
 }
 
-.resumen p{
-margin:5px 0;
+body.dark .card{
+background:#2a2a2a;
+box-shadow:none;
 }
 
-.total{
-font-weight:bold;
-font-size:16px;
+body.dark input,
+body.dark select{
+background:#333;
+color:white;
+border:1px solid #444;
 }
 
-canvas{
-margin-top:10px;
+body.dark button{
+background:#444;
+color:white;
+}
+
+body.dark button.secondary{
+background:#666;
+color:white;
 }
 
 </style>
@@ -99,6 +99,10 @@ margin-top:10px;
 <body>
 
 <div class="app">
+
+<div style="text-align:right; margin-bottom:10px;">
+  <button id="toggleDark">🌙</button>
+</div>
 
 <h2>Mis Finanzas</h2>
 
@@ -234,6 +238,27 @@ datos[anio][m].gastos=datos[anio][m].gastos.filter(g=>g.id!==id);
 guardarStorage();render();
 }
 
+function activarModoOscuro(){
+  document.body.classList.add("dark");
+  localStorage.setItem("modo","dark");
+  document.getElementById("toggleDark").innerText="☀️";
+}
+
+function desactivarModoOscuro(){
+  document.body.classList.remove("dark");
+  localStorage.setItem("modo","light");
+  document.getElementById("toggleDark").innerText="🌙";
+}
+
+document.getElementById("toggleDark").addEventListener("click",()=>{
+  if(document.body.classList.contains("dark")){
+    desactivarModoOscuro();
+  }else{
+    activarModoOscuro();
+  }
+});
+
+
 function render(){
 inicializarAnio(anio);
 anioActual.innerText=anio;
@@ -257,19 +282,59 @@ tablaGastos.innerHTML+=`
 let disp=(d.sueldo||0)-total-(d.ahorro||0);
 totalGastos.innerText=formatoCL(total);
 totalAhorro.innerText=formatoCL(d.ahorro);
-disponible.innerText=formatoCL(disp);
+disponible.innerText = formatoCL(disp);
+
+if(disp > 0){
+  disponible.style.color = "green";
+}else if(disp < 0){
+  disponible.style.color = "red";
+}else{
+  disponible.style.color = "black";
+}
+
 
 actualizarGrafico();
 actualizarResumenAnual();
 }
 
 let ctx=document.getElementById("graficoAhorro").getContext("2d");
-let grafico=new Chart(ctx,{
+let grafico = new Chart(ctx,{
 type:"bar",
-data:{labels:meses,datasets:[
-{label:"Ahorro Mensual",data:Array(12).fill(0)},
-{label:"Ahorro Acumulado",data:Array(12).fill(0),type:"line"}
-]}
+data:{
+  labels:meses,
+  datasets:[
+    {
+      label:"Ahorro Mensual",
+      data:Array(12).fill(0)
+    },
+    {
+      label:"Ahorro Acumulado",
+      data:Array(12).fill(0),
+      type:"line"
+    }
+  ]
+},
+options:{
+  responsive:true,
+  plugins:{
+    tooltip:{
+      callbacks:{
+        label:function(context){
+          return context.dataset.label + ": " + formatoCL(context.raw);
+        }
+      }
+    }
+  },
+  scales:{
+    y:{
+      ticks:{
+        callback:function(value){
+          return formatoCL(value);
+        }
+      }
+    }
+  }
+}
 });
 
 function actualizarGrafico(){
@@ -324,6 +389,11 @@ iniciar();
 formatearInput(sueldoInput);
 formatearInput(ahorroInput);
 formatearInput(montoInput);
+
+if(localStorage.getItem("modo")==="dark"){
+  activarModoOscuro();
+}
+
 
 </script>
 </body>

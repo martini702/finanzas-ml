@@ -8,7 +8,6 @@
 <meta name="theme-color" content="#111111">
 
 <link rel="manifest" href="manifest.json">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -61,9 +60,6 @@ body.dark input,body.dark select{background:#333;color:white;border:1px solid #4
 body.dark button{background:#444;color:white;}
 body.dark button.secondary{background:#666;color:white;}
 </style>
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#111111">
-
 </head>
 
 <body>
@@ -127,6 +123,7 @@ body.dark button.secondary{background:#666;color:white;}
 </div>
 
 <script>
+
 const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let anio=new Date().getFullYear();
 let datos=JSON.parse(localStorage.getItem("finanzas"))||{};
@@ -136,6 +133,13 @@ function guardarStorage(){localStorage.setItem("finanzas",JSON.stringify(datos))
 const formatoMoneda=new Intl.NumberFormat("es-CL",{style:"currency",currency:"CLP",minimumFractionDigits:0});
 function formatoCL(v){return formatoMoneda.format(Number(v||0));}
 function limpiarNumero(valor){return Number(String(valor).replace(/\D/g,""))||0;}
+
+function limpiarFormularioGasto(){
+  descInput.value="";
+  montoInput.value="";
+  cuotasInput.value="";
+  descInput.focus();
+}
 
 function inicializarAnio(a){
 if(!datos[a]){
@@ -147,7 +151,6 @@ for(let i=0;i<12;i++){datos[a][i]={sueldo:0,ahorro:0,gastos:[]};}
 function cambiarAnio(d){anio+=d;inicializarAnio(anio);render();}
 function getMes(){return Number(mesSelect.value);}
 
-/* 🔥 SUELDO SE APLICA A MESES FUTUROS */
 function guardarSueldo(){
 let m=getMes();
 let sueldo=limpiarNumero(sueldoInput.value);
@@ -175,8 +178,12 @@ let m=getMes();
 let desc=descInput.value;
 let monto=limpiarNumero(montoInput.value);
 if(!desc||!monto)return;
+
 datos[anio][m].gastos.push({id:Date.now(),desc,monto});
-guardarStorage();render();
+guardarStorage();
+
+limpiarFormularioGasto();
+render();
 }
 
 function agregarCuotas(){
@@ -185,13 +192,35 @@ let desc=descInput.value;
 let monto=limpiarNumero(montoInput.value);
 let cuotas=Number(cuotasInput.value);
 if(!desc||!monto||!cuotas)return;
+
 let aTemp=anio,mTemp=mInicial;
+
 for(let i=0;i<cuotas;i++){
 inicializarAnio(aTemp);
 datos[aTemp][mTemp].gastos.push({id:Date.now()+i,desc,monto});
-mTemp++;if(mTemp>11){mTemp=0;aTemp++;}
+mTemp++;
+if(mTemp>11){mTemp=0;aTemp++;}
 }
-guardarStorage();render();
+
+guardarStorage();
+
+limpiarFormularioGasto();
+render();
+}
+
+function aplicarATodos(){
+let desc=descInput.value;
+let monto=limpiarNumero(montoInput.value);
+if(!desc||!monto)return;
+
+for(let i=0;i<12;i++){
+datos[anio][i].gastos.push({id:Date.now()+i,desc,monto});
+}
+
+guardarStorage();
+
+limpiarFormularioGasto();
+render();
 }
 
 function render(){
@@ -199,18 +228,23 @@ inicializarAnio(anio);
 anioActual.innerText=anio;
 let m=getMes();
 let d=datos[anio][m];
+
 sueldoInput.value=d.sueldo?formatoCL(d.sueldo):"";
 ahorroInput.value=d.ahorro?formatoCL(d.ahorro):"";
+
 let total=0;
 tablaGastos.innerHTML="";
 d.gastos.forEach(g=>{
 total+=g.monto;
 tablaGastos.innerHTML+=`<tr><td>${g.desc} - ${formatoCL(g.monto)}</td></tr>`;
 });
+
 let disp=(d.sueldo||0)-total-(d.ahorro||0);
+
 totalGastos.innerText=formatoCL(total);
 totalAhorro.innerText=formatoCL(d.ahorro);
 disponible.innerText=formatoCL(disp);
+
 actualizarGrafico();
 }
 
@@ -239,25 +273,17 @@ render();
 
 iniciar();
 
-/* 🌙 Modo oscuro */
 document.getElementById("toggleDark").addEventListener("click",()=>{
 document.body.classList.toggle("dark");
 });
 
-/* 🔥 REGISTRO SERVICE WORKER */
 if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('service-worker.js')
+navigator.serviceWorker.register('/service-worker.js')
 .then(()=>console.log("Service Worker registrado"))
 .catch(err=>console.log("Error SW:",err));
-}
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(() => console.log("Service Worker registrado"))
-    .catch(err => console.log("Error al registrar SW:", err));
 }
 
 </script>
 
 </body>
 </html>
-

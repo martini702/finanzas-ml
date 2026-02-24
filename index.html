@@ -32,6 +32,7 @@ padding:12px;
 border-radius:12px;
 margin-bottom:15px;
 box-shadow:0 2px 6px rgba(0,0,0,0.05);
+overflow-x:auto;
 }
 button{
 background:#111;
@@ -53,12 +54,53 @@ margin-top:5px;
 border-radius:8px;
 border:1px solid #ddd;
 }
+table{
+width:100%;
+border-collapse:collapse;
+}
+td,th{
+padding:6px;
+border-bottom:1px solid #e6e6e6;
+font-size:14px;
+text-align:left;
+}
+.small-actions{
+display:flex;
+gap:5px;
+}
+.small-actions button{
+padding:5px 8px;
+margin-top:0;
+}
+.mini-input{
+min-width:90px;
+}
+.month-grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:8px;
+}
+.month-btn{
+margin-top:0;
+padding:10px 6px;
+font-size:13px;
+background:#efefef;
+color:#111;
+}
+.month-btn.active{
+background:#111;
+color:#fff;
+font-weight:600;
+}
 body.dark{background:#121212;color:white;}
 body.dark .app{background:#1e1e1e;box-shadow:none;}
 body.dark .card{background:#2a2a2a;box-shadow:none;}
 body.dark input,body.dark select{background:#333;color:white;border:1px solid #444;}
 body.dark button{background:#444;color:white;}
 body.dark button.secondary{background:#666;color:white;}
+body.dark td,body.dark th{border-color:#3b3b3b;}
+body.dark .month-btn{background:#3a3a3a;color:#fff;}
+body.dark .month-btn.active{background:#fff;color:#111;}
 </style>
 </head>
 
@@ -79,14 +121,15 @@ body.dark button.secondary{background:#666;color:white;}
 </div>
 
 <div class="card">
-<select id="mesSelect" onchange="render()"></select>
+<h4>Mes</h4>
+<div id="mesCalendario" class="month-grid"></div>
 </div>
 
 <div class="card">
 <h4>Sueldo</h4>
 <input id="sueldoInput" placeholder="Ingrese sueldo">
-<button onclick="guardarSueldo()">Guardar</button>
-<button class="secondary" onclick="eliminarSueldo()">Eliminar</button>
+<button onclick="guardarSueldo()">Guardar mes actual</button>
+<button class="secondary" onclick="eliminarSueldo()">Eliminar mes actual</button>
 </div>
 
 <div class="card">
@@ -106,7 +149,7 @@ body.dark button.secondary{background:#666;color:white;}
 </div>
 
 <div class="card">
-<h4>Gastos del mes</h4>
+<h4>Gastos del mes (editables)</h4>
 <table id="tablaGastos"></table>
 </div>
 
@@ -114,6 +157,12 @@ body.dark button.secondary{background:#666;color:white;}
 <p>Total Gastos: <span id="totalGastos"></span></p>
 <p>Ahorro: <span id="totalAhorro"></span></p>
 <p>Disponible: <span id="disponible"></span></p>
+</div>
+
+<div class="card">
+<h4>Proyección anual editable</h4>
+<table id="tablaProyeccion"></table>
+<button onclick="guardarProyeccionAnual()">Guardar proyección anual</button>
 </div>
 
 <div class="card">
@@ -126,6 +175,7 @@ body.dark button.secondary{background:#666;color:white;}
 
 const meses=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 let anio=new Date().getFullYear();
+let mesSeleccionado=new Date().getMonth();
 let datos=JSON.parse(localStorage.getItem("finanzas"))||{};
 
 function guardarStorage(){localStorage.setItem("finanzas",JSON.stringify(datos));}
@@ -133,6 +183,9 @@ function guardarStorage(){localStorage.setItem("finanzas",JSON.stringify(datos))
 const formatoMoneda=new Intl.NumberFormat("es-CL",{style:"currency",currency:"CLP",minimumFractionDigits:0});
 function formatoCL(v){return formatoMoneda.format(Number(v||0));}
 function limpiarNumero(valor){return Number(String(valor).replace(/\D/g,""))||0;}
+function escapeHTML(valor){
+return String(valor||"").replace(/[&<>\"']/g,(m)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+}
 
 function limpiarFormularioGasto(){
   descInput.value="";
@@ -149,19 +202,23 @@ for(let i=0;i<12;i++){datos[a][i]={sueldo:0,ahorro:0,gastos:[]};}
 }
 
 function cambiarAnio(d){anio+=d;inicializarAnio(anio);render();}
-function getMes(){return Number(mesSelect.value);}
+function getMes(){return mesSeleccionado;}
+
+function seleccionarMes(mes){
+mesSeleccionado=mes;
+render();
+}
 
 function guardarSueldo(){
 let m=getMes();
-let sueldo=limpiarNumero(sueldoInput.value);
-for(let i=m;i<12;i++){datos[anio][i].sueldo=sueldo;}
+datos[anio][m].sueldo=limpiarNumero(sueldoInput.value);
 guardarStorage();
 render();
 }
 
 function eliminarSueldo(){
 let m=getMes();
-for(let i=m;i<12;i++){datos[anio][i].sueldo=0;}
+datos[anio][m].sueldo=0;
 guardarStorage();
 render();
 }
@@ -175,7 +232,7 @@ render();
 
 function agregarGasto(){
 let m=getMes();
-let desc=descInput.value;
+let desc=descInput.value.trim();
 let monto=limpiarNumero(montoInput.value);
 if(!desc||!monto)return;
 
@@ -186,9 +243,30 @@ limpiarFormularioGasto();
 render();
 }
 
+function editarGasto(id){
+let m=getMes();
+let desc=document.getElementById(`desc-${id}`)?.value.trim();
+let monto=limpiarNumero(document.getElementById(`monto-${id}`)?.value||0);
+if(!desc||!monto)return;
+
+let gasto=datos[anio][m].gastos.find(g=>g.id===id);
+if(!gasto)return;
+gasto.desc=desc;
+gasto.monto=monto;
+guardarStorage();
+render();
+}
+
+function eliminarGasto(id){
+let m=getMes();
+datos[anio][m].gastos=datos[anio][m].gastos.filter(g=>g.id!==id);
+guardarStorage();
+render();
+}
+
 function agregarCuotas(){
 let mInicial=getMes();
-let desc=descInput.value;
+let desc=descInput.value.trim();
 let monto=limpiarNumero(montoInput.value);
 let cuotas=Number(cuotasInput.value);
 if(!desc||!monto||!cuotas)return;
@@ -209,7 +287,7 @@ render();
 }
 
 function aplicarATodos(){
-let desc=descInput.value;
+let desc=descInput.value.trim();
 let monto=limpiarNumero(montoInput.value);
 if(!desc||!monto)return;
 
@@ -223,28 +301,78 @@ limpiarFormularioGasto();
 render();
 }
 
+function guardarProyeccionAnual(){
+for(let i=0;i<12;i++){
+let sueldoInputMes=document.getElementById(`proy-sueldo-${i}`);
+let ahorroInputMes=document.getElementById(`proy-ahorro-${i}`);
+if(!sueldoInputMes||!ahorroInputMes) continue;
+datos[anio][i].sueldo=limpiarNumero(sueldoInputMes.value);
+datos[anio][i].ahorro=limpiarNumero(ahorroInputMes.value);
+}
+guardarStorage();
+render();
+}
+
+function renderGastos(d){
+let total=0;
+tablaGastos.innerHTML="";
+if(!d.gastos.length){
+  tablaGastos.innerHTML="<tr><td>No hay gastos para este mes.</td></tr>";
+  return total;
+}
+
+tablaGastos.innerHTML="<tr><th>Descripción</th><th>Monto</th><th>Acciones</th></tr>";
+d.gastos.forEach(g=>{
+total+=g.monto;
+tablaGastos.innerHTML+=`<tr>
+<td><input id="desc-${g.id}" class="mini-input" value="${escapeHTML(g.desc)}"></td>
+<td><input id="monto-${g.id}" class="mini-input" value="${formatoCL(g.monto)}"></td>
+<td>
+  <div class="small-actions">
+    <button onclick="editarGasto(${g.id})">Guardar</button>
+    <button class="secondary" onclick="eliminarGasto(${g.id})">Eliminar</button>
+  </div>
+</td>
+</tr>`;
+});
+return total;
+}
+
+function renderProyeccionAnual(){
+let html="<tr><th>Mes</th><th>Sueldo</th><th>Ahorro</th><th>Gastos</th><th>Disponible</th></tr>";
+for(let i=0;i<12;i++){
+let d=datos[anio][i];
+let gastosMes=d.gastos.reduce((acc,g)=>acc+g.monto,0);
+let disponibleMes=(d.sueldo||0)-gastosMes-(d.ahorro||0);
+html+=`<tr>
+<td>${meses[i]}</td>
+<td><input id="proy-sueldo-${i}" class="mini-input" value="${formatoCL(d.sueldo)}"></td>
+<td><input id="proy-ahorro-${i}" class="mini-input" value="${formatoCL(d.ahorro)}"></td>
+<td>${formatoCL(gastosMes)}</td>
+<td>${formatoCL(disponibleMes)}</td>
+</tr>`;
+}
+tablaProyeccion.innerHTML=html;
+}
+
 function render(){
 inicializarAnio(anio);
 anioActual.innerText=anio;
+renderMesCalendario();
 let m=getMes();
 let d=datos[anio][m];
 
 sueldoInput.value=d.sueldo?formatoCL(d.sueldo):"";
 ahorroInput.value=d.ahorro?formatoCL(d.ahorro):"";
 
-let total=0;
-tablaGastos.innerHTML="";
-d.gastos.forEach(g=>{
-total+=g.monto;
-tablaGastos.innerHTML+=`<tr><td>${g.desc} - ${formatoCL(g.monto)}</td></tr>`;
-});
-
+let total=renderGastos(d);
 let disp=(d.sueldo||0)-total-(d.ahorro||0);
 
 totalGastos.innerText=formatoCL(total);
 totalAhorro.innerText=formatoCL(d.ahorro);
 disponible.innerText=formatoCL(disp);
 
+renderProyeccionAnual();
 actualizarGrafico();
 }
 
@@ -261,12 +389,18 @@ grafico.data.datasets[0].data=ahorroMensual;
 grafico.update();
 }
 
-function iniciar(){
-meses.forEach((m,i)=>{
-let opt=document.createElement("option");
-opt.value=i;opt.text=m;mesSelect.appendChild(opt);
+function renderMesCalendario(){
+mesCalendario.innerHTML="";
+meses.forEach((mes,i)=>{
+let btn=document.createElement("button");
+btn.className=`month-btn ${i===mesSeleccionado?"active":""}`;
+btn.textContent=mes;
+btn.onclick=()=>seleccionarMes(i);
+mesCalendario.appendChild(btn);
 });
-mesSelect.value=new Date().getMonth();
+}
+
+function iniciar(){
 inicializarAnio(anio);
 render();
 }
